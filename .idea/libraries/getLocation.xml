@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="getLocation">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/getLocation.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javabuilder.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
