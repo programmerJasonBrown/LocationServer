@@ -3,6 +3,7 @@ import com.mathworks.toolbox.javabuilder.MWException;
 import com.mathworks.toolbox.javabuilder.MWNumericArray;
 import getLocation.GetLocation;
 
+
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.FileWriter;
@@ -13,6 +14,8 @@ import java.text.SimpleDateFormat;
 public class SocketHandle extends Thread {
     private Socket socket;
     BufferedWriter bufferedWriter;
+    BufferedWriter bufferedWriterOfD;
+
     FileWriter fileWriter = null;
 
     public SocketHandle(Socket socket) {
@@ -22,6 +25,8 @@ public class SocketHandle extends Thread {
         try {
             fileWriter = new FileWriter("location" + sf.format(System.currentTimeMillis()) + ".txt", true);
             bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriterOfD = new BufferedWriter(new FileWriter("distance" +
+                    sf.format(System.currentTimeMillis()) + ".txt", true));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -51,12 +56,6 @@ public class SocketHandle extends Thread {
             int len = 0;
             boolean flag = true;
             while ((len = dis.read(bytes)) != -1) {
-//                for (int i = 0; i < len; i++) {
-//                    System.out.printf("%x| ", bytes[i]);
-//                }
-//                System.out.println();
-//                System.out.println("=====");
-
                 /*获得定位坐标（注释部分）*/
                 double[] d = new double[8];
                 if (flag) {
@@ -84,6 +83,12 @@ public class SocketHandle extends Thread {
                             ((bytes[16] & 0xff) << 8) + (bytes[17] & 0xff);
                     System.out.println(" d5 = " + String.valueOf(d[4]) + " d6 = " + String.valueOf(d[5]) + " d7 = "
                             + String.valueOf(d[6]) + " d8 = " + String.valueOf(d[7]));
+                    for (int i = 0; i < 7; i++) {
+                        bufferedWriterOfD.write(String.valueOf(d[i]) + ",");
+                    }
+                    bufferedWriterOfD.write(String.valueOf(d[7]) + "\r\n");
+
+
                     GetLocation getLocation = null;
                     Object[] rs = null;
 
@@ -102,7 +107,7 @@ public class SocketHandle extends Thread {
                     System.out.println("z = " + rs[2]);
                     System.out.println("===================================");
                     System.out.println();
-                    bufferedWriter.write(rs[0] + "," + rs[1] + "," + rs[2]);
+                    bufferedWriter.write(rs[0] + "," + rs[1] + "," + rs[2] + "\r\n");
                     bufferedWriter.flush();
                 }
             }

@@ -12,7 +12,6 @@ public class ServerListener extends Thread{
                 System.out.println("有新的连接");
                 SocketHandle socketHandle = new SocketHandle(socket);
                 socketHandle.start();
-
             }
         } catch (IOException e) {
             e.printStackTrace();
