@@ -47,7 +47,6 @@ public class SocketHandle extends Thread {
 
     @Override
     public void run() {
-        int count = 0;
         DataInputStream dis;
         try {
             dis = new DataInputStream(socket.getInputStream());
@@ -70,8 +69,7 @@ public class SocketHandle extends Thread {
                             ((bytes[16] & 0xff) << 8) + (bytes[17] & 0xff);
                     System.out.print("d1 = " + String.valueOf(d[0]) + " d2 = " + String.valueOf(d[1]) + " d3 = "
                             + String.valueOf(d[2]) + " d4 = " + String.valueOf(d[3]));
-                }
-                if (!flag) {
+                } else {
                     flag = true;
                     d[4] += ((bytes[2] & 0xff) << 24) + ((bytes[3] & 0xff) << 16) +
                             ((bytes[4] & 0xff) << 8) + (bytes[5] & 0xff);
@@ -83,27 +81,20 @@ public class SocketHandle extends Thread {
                             ((bytes[16] & 0xff) << 8) + (bytes[17] & 0xff);
                     System.out.println(" d5 = " + String.valueOf(d[4]) + " d6 = " + String.valueOf(d[5]) + " d7 = "
                             + String.valueOf(d[6]) + " d8 = " + String.valueOf(d[7]));
-                    count++;
-                    if (count == 10) {
-                        /****10次后去平均值计算定位结果***/
-                        count = 0;
-                        for (int i = 0; i < 8; i++) {
-                            d[i] /= 10;
-                        }
-                        for (int i = 0; i < 7; i++) {
-                            bufferedWriterOfD.write(String.valueOf(d[i]) + "   ,");
-                        }
-                        bufferedWriterOfD.write(String.valueOf(d[7]) + "\r\n");
-                        bufferedWriterOfD.flush();
 
-                        ThreadSolveTDoA solveTDoA = new ThreadSolveTDoA();
-                        solveTDoA.setD(d);
-                        solveTDoA.setBufferedWriter(bufferedWriter);
-                        executor.execute(solveTDoA);
-
+                    for (int i = 0; i < 7; i++) {
+                        bufferedWriterOfD.write(String.valueOf(d[i]) + "   ,");
                     }
+                    bufferedWriterOfD.write(String.valueOf(d[7]) + "\r\n");
+                    bufferedWriterOfD.flush();
+/******************************计算TDoA****************************/
+                    ThreadSolveTDoA solveTDoA = new ThreadSolveTDoA();
+                    solveTDoA.setD(d);
+                    solveTDoA.setBufferedWriter(bufferedWriter);
+                    executor.execute(solveTDoA);
                 }
             }
+
             bufferedWriter.close();
         } catch (IOException e) {
             e.printStackTrace();

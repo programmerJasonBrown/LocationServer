@@ -10,7 +10,7 @@ public class ServerListener extends Thread{
             while(true){
                 Socket socket = serverSocket.accept();
                 System.out.println("有新的连接");
-                SocketHandle socketHandle = new SocketHandle(socket);
+                SocketHandle2 socketHandle = new SocketHandle2(socket);
                 socketHandle.start();
             }
         } catch (IOException e) {

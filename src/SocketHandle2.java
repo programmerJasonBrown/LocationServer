@@ -1,101 +1,74 @@
-import com.mathworks.toolbox.javabuilder.MWException;
-import getLocation.GetLocation;
-
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SocketHandle2 extends Thread {
     private Socket socket;
+    BufferedWriter bufferedWriter;
+    BufferedWriter bufferedWriterOfD;
+
+    FileWriter fileWriter = null;
+    ExecutorService executor = Executors.newCachedThreadPool();
 
     public SocketHandle2(Socket socket) {
-        this.socket = socket;
-    }
 
-    public void out(byte[] bytes) {
+        this.socket = socket;
+        SimpleDateFormat sf = new SimpleDateFormat("_MM_dd_HH_mm_ss");// pattern大小写敏感
         try {
-            System.out.print("send:");
-            for (int i = 0; i < bytes.length; i++) {
-                System.out.printf("%x|  ", bytes[i]);
-            }
-            System.out.println();
-            socket.getOutputStream().write(bytes);
+            fileWriter = new FileWriter("location" + sf.format(System.currentTimeMillis()) + ".txt", true);
+            bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriterOfD = new BufferedWriter(new FileWriter("distance" +
+                    sf.format(System.currentTimeMillis()) + ".txt", true));
         } catch (IOException e) {
             e.printStackTrace();
         }
+
     }
 
     @Override
     public void run() {
+        int count = 0;
         DataInputStream dis;
-        FileWriter fileWriter = null;
-        BufferedWriter bufferedWriter = null;
-        SimpleDateFormat sf = new SimpleDateFormat("HHmmss");// pattern大小写敏感
-        try {
-            fileWriter = new FileWriter("location" + sf.format(System.currentTimeMillis()) + ".txt", true);
-            bufferedWriter = new BufferedWriter(fileWriter);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         try {
             dis = new DataInputStream(socket.getInputStream());
             String str;
             byte[] bytes = new byte[19];
-            while ((dis.read(bytes)) != -1) {
-                for (int i = 0; i < bytes.length; i++) {
-                    System.out.printf("%x| ", bytes[i]);
-                }
-                System.out.println("=====");
-
+            int len = 0;
+            boolean flag = true;
+            while ((len = dis.read(bytes)) != -1) {
                 /*获得定位坐标（注释部分）*/
-                int d1 = 0;
-                int d2 = 0;
-                int d3 = 0;
-                int d4 = 0;
-                d1 = ((bytes[2] & 0xff) << 24) + ((bytes[3] & 0xff) << 16) +
+                double[] d = new double[4];
+                d[0] += ((bytes[2] & 0xff) << 24) + ((bytes[3] & 0xff) << 16) +
                         ((bytes[4] & 0xff) << 8) + (bytes[5] & 0xff);
-                d2 = ((bytes[6] & 0xff) << 24) + ((bytes[7] & 0xff) << 16) +
+                d[1] += ((bytes[6] & 0xff) << 24) + ((bytes[7] & 0xff) << 16) +
                         ((bytes[8] & 0xff) << 8) + (bytes[9] & 0xff);
-                d3 = ((bytes[10] & 0xff) << 24) + ((bytes[11] & 0xff) << 16) +
+                d[2] += ((bytes[10] & 0xff) << 24) + ((bytes[11] & 0xff) << 16) +
                         ((bytes[12] & 0xff) << 8) + (bytes[13] & 0xff);
-                d4 = ((bytes[14] & 0xff) << 24) + ((bytes[15] & 0xff) << 16) +
+                d[3] += ((bytes[14] & 0xff) << 24) + ((bytes[15] & 0xff) << 16) +
                         ((bytes[16] & 0xff) << 8) + (bytes[17] & 0xff);
-                System.out.println("d1=" + String.valueOf(d1) + " d2=" + String.valueOf(d2) + " d3=" + String.valueOf(d3) + " d4=" + String.valueOf(d4));
-                double L = (d2 - d1) / 1000.0;  //L 表示里第一个参考节点的距离
-                double R = (d3 - d1) / 1000.0;
-                double Q = (d4 - d1) / 1000.0;
-
-                GetLocation getLocation = null;
-                Object[] rs = null;
-                try {
-                    getLocation = new GetLocation();
-                    rs = getLocation.getX(3, L, Q, R);
-                } catch (MWException e) {
-                    e.printStackTrace();
+                System.out.print("d1 = " + String.valueOf(d[0]) + " d2 = " + String.valueOf(d[1]) + " d3 = "
+                        + String.valueOf(d[2]) + " d4 = " + String.valueOf(d[3]));
+                for (int i = 0; i < 3; i++) {
+                    bufferedWriterOfD.write(String.valueOf(d[i]) + "   ,");
                 }
-                System.out.print("x = " + rs[0] + ", ");
-                System.out.print("y = " + rs[1] + ", ");
-                System.out.println("z = " + rs[2]);
-                bufferedWriter.write(rs[0].toString() + " " + rs[1].toString() + " " + rs[2].toString());
-                bufferedWriter.flush();
+                bufferedWriterOfD.write(String.valueOf(d[3]) + "\r\n");
+                bufferedWriterOfD.flush();
+
+                /************计算TDoA值***********/
+                /*ThreadSolveTDoA solveTDoA = new ThreadSolveTDoA();
+                solveTDoA.setD(d);
+                solveTDoA.setBufferedWriter(bufferedWriter);
+                executor.execute(solveTDoA);*/
             }
-            //socket.close();
+            bufferedWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (bufferedWriter != null) {
-                    bufferedWriter.close();
-                    fileWriter.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
-}
 
+}
